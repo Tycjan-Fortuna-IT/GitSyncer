@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/wailsapp/wails/v2 v2.11.0
+	golang.org/x/crypto v0.40.0
 	modernc.org/sqlite v1.46.1
 )
 
@@ -38,7 +39,6 @@ require (
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect

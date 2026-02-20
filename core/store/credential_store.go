@@ -20,9 +20,9 @@ func (s *CredentialStore) Create(c *models.Credential) error {
 	now := time.Now().UTC()
 
 	result, err := s.db.Exec(
-		`INSERT INTO credentials (provider_id, label, auth_type, auth_data, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?)`,
-		c.ProviderID, c.Label, c.AuthType, c.AuthData, now, now,
+		`INSERT INTO credentials (provider_id, label, auth_type, auth_data, salt, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		c.ProviderID, c.Label, c.AuthType, c.AuthData, c.Salt, now, now,
 	)
 	if err != nil {
 		return fmt.Errorf("CredentialStore.Create: %w", err)
@@ -44,9 +44,9 @@ func (s *CredentialStore) GetByID(id int64) (*models.Credential, error) {
 	c := &models.Credential{}
 
 	err := s.db.QueryRow(
-		`SELECT id, provider_id, label, auth_type, auth_data, created_at, updated_at
+		`SELECT id, provider_id, label, auth_type, auth_data, salt, created_at, updated_at
 		 FROM credentials WHERE id = ?`, id,
-	).Scan(&c.ID, &c.ProviderID, &c.Label, &c.AuthType, &c.AuthData, &c.CreatedAt, &c.UpdatedAt)
+	).Scan(&c.ID, &c.ProviderID, &c.Label, &c.AuthType, &c.AuthData, &c.Salt, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("CredentialStore.GetByID(%d): %w", id, err)
 	}
@@ -56,7 +56,7 @@ func (s *CredentialStore) GetByID(id int64) (*models.Credential, error) {
 
 func (s *CredentialStore) GetByProviderID(providerID int64) ([]models.Credential, error) {
 	rows, err := s.db.Query(
-		`SELECT id, provider_id, label, auth_type, auth_data, created_at, updated_at
+		`SELECT id, provider_id, label, auth_type, auth_data, salt, created_at, updated_at
 		 FROM credentials WHERE provider_id = ? ORDER BY id`, providerID,
 	)
 	if err != nil {
@@ -69,7 +69,7 @@ func (s *CredentialStore) GetByProviderID(providerID int64) ([]models.Credential
 	for rows.Next() {
 		var c models.Credential
 
-		if err := rows.Scan(&c.ID, &c.ProviderID, &c.Label, &c.AuthType, &c.AuthData, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.ProviderID, &c.Label, &c.AuthType, &c.AuthData, &c.Salt, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("CredentialStore.GetByProviderID(%d): scan: %w", providerID, err)
 		}
 
@@ -81,7 +81,7 @@ func (s *CredentialStore) GetByProviderID(providerID int64) ([]models.Credential
 
 func (s *CredentialStore) List() ([]models.Credential, error) {
 	rows, err := s.db.Query(
-		`SELECT id, provider_id, label, auth_type, auth_data, created_at, updated_at
+		`SELECT id, provider_id, label, auth_type, auth_data, salt, created_at, updated_at
 		 FROM credentials ORDER BY id`,
 	)
 	if err != nil {
@@ -94,7 +94,7 @@ func (s *CredentialStore) List() ([]models.Credential, error) {
 	for rows.Next() {
 		var c models.Credential
 
-		if err := rows.Scan(&c.ID, &c.ProviderID, &c.Label, &c.AuthType, &c.AuthData, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.ProviderID, &c.Label, &c.AuthType, &c.AuthData, &c.Salt, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("CredentialStore.List: scan: %w", err)
 		}
 
@@ -108,9 +108,9 @@ func (s *CredentialStore) Update(c *models.Credential) error {
 	now := time.Now().UTC()
 
 	result, err := s.db.Exec(
-		`UPDATE credentials SET provider_id = ?, label = ?, auth_type = ?, auth_data = ?, updated_at = ?
+		`UPDATE credentials SET provider_id = ?, label = ?, auth_type = ?, auth_data = ?, salt = ?, updated_at = ?
 		 WHERE id = ?`,
-		c.ProviderID, c.Label, c.AuthType, c.AuthData, now, c.ID,
+		c.ProviderID, c.Label, c.AuthType, c.AuthData, c.Salt, now, c.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("CredentialStore.Update(%d): %w", c.ID, err)
@@ -126,6 +126,31 @@ func (s *CredentialStore) Update(c *models.Credential) error {
 	}
 
 	c.UpdatedAt = now
+
+	return nil
+}
+
+// UpdateEncryptedInTx updates only the auth_data and salt for a credential
+// within an existing transaction. Used during master password change.
+func (s *CredentialStore) UpdateEncryptedInTx(tx *sql.Tx, id int64, authData string, salt []byte) error {
+	now := time.Now().UTC()
+
+	result, err := tx.Exec(
+		`UPDATE credentials SET auth_data = ?, salt = ?, updated_at = ? WHERE id = ?`,
+		authData, salt, now, id,
+	)
+	if err != nil {
+		return fmt.Errorf("CredentialStore.UpdateEncryptedInTx(%d): %w", id, err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("CredentialStore.UpdateEncryptedInTx(%d): rows affected: %w", id, err)
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("CredentialStore.UpdateEncryptedInTx(%d): %w", id, sql.ErrNoRows)
+	}
 
 	return nil
 }
