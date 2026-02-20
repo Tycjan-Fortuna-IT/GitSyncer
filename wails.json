@@ -1,13 +1,14 @@
 {
-  "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "GitSyncer",
-  "outputfilename": "GitSyncer",
-  "frontend:install": "npm install",
-  "frontend:build": "npm run build",
-  "frontend:dev:watcher": "npm run dev",
-  "frontend:dev:serverUrl": "auto",
-  "author": {
-    "name": "Tycjan-Fortuna-IT",
-    "email": "tycjan.fortu@gmail.com"
-  }
+    "$schema": "https://wails.io/schemas/config.v2.json",
+    "name": "GitSyncer",
+    "outputfilename": "GitSyncer",
+    "frontend:install": "npm install",
+    "frontend:build": "npm run build",
+    "frontend:dev:watcher": "npm run dev",
+    "frontend:dev:serverUrl": "auto",
+    "frontend:dir": "ui",
+    "author": {
+        "name": "Tycjan-Fortuna-IT",
+        "email": "tycjan.fortu@gmail.com"
+    }
 }

@@ -1,0 +1,23 @@
+linters:
+    enable:
+        - govet
+        - errcheck
+        - staticcheck
+        - unused
+        - gosimple
+        - ineffassign
+        - typecheck
+        - gocritic
+
+linters-settings:
+    govet:
+        shadow: true
+    gocritic:
+        enabled-tags:
+            - diagnostic
+            - performance
+
+issues:
+    exclude-dirs:
+        - ui
+        - build
