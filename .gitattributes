@@ -1,0 +1,2 @@
+build/windows/installer/* linguist-vendored
+frontend/wailsjs/** linguist-generated
